@@ -1,0 +1,9 @@
+{
+  "commands": {
+    "build": "./gradlew build -x test",
+    "proof": "./gradlew test",
+    "deploy_dev": "echo '대조 데모 — 배포 없음'",
+    "verify_dev": "./gradlew grade"
+  },
+  "notes": ["3강 대조 데모(자바·Gradle): 명세 없이(vibe) vs 명세대로(SDD)를 같은 수용기준으로 채점.", "proof = ./gradlew test(ContrastTest). 학습자 채점 = ./gradlew grade(MyOtp). SDD 4/4 vs vibe<4/4."]
+}
