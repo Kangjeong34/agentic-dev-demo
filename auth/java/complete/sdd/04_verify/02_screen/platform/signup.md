@@ -1,5 +1,6 @@
 # signup_otp 화면 · 검증 (retained)
 
+- 설계 명세: `sdd/01_planning/02_screen/signup_otp_screen_spec.md`
 - 캐노니컬 스냅샷: `sdd/04_verify/10_test/ui_parity/signup_otp.html`
 - 게이트: `python3 sdd/99_toolchain/01_automation/run_ui_parity.py` → ui_parity 1/1 PASS
 - 실 강의 데모는 Playwright exactness gate로 픽셀 비교; 본 환경은 결정적 HTML parity로 대체.
