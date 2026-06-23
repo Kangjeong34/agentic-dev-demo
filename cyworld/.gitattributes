@@ -1,0 +1,6 @@
+# 결정적 UI parity 게이트: 렌더러는 LF 를 출력하므로 스냅샷도 OS 무관 LF 로 고정한다.
+# (autocrlf=true 환경에서 CRLF 로 변환되면 MinihompyScreenParityTest 가 거짓 FAIL 을 낸다)
+sdd/04_verify/10_test/ui_parity/*.html text eol=lf
+
+# toolchain 스크립트도 LF 로 고정한다.
+sdd/99_toolchain/**/*.py text eol=lf

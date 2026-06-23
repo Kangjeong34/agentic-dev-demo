@@ -23,19 +23,22 @@
 - [x] T5 @backend-dev  미니룸 구매(도토리 재사용)·배치·대표 BGM (`MiniroomService`)
 - [x] T6 @frontend-dev 미니홈피 메인 화면 렌더 + UI parity (`04_verify/10_test/ui_parity/minihompy_main.html`)
 - [x] T7 @test-dev     도메인 27 + 화면 parity 3 = 30케이스 PASS
+- [x] T8 @backend-dev 일촌 파도타기: 일촌 그래프 순회·방문이력·결정성 (`WaveService`/`WaveRide`)
 
 ## Dependencies
 - T3·T4 화면 분기는 T1(일촌)에 의존.
 - T5는 T2(도토리)에 의존.
 - T6는 T1~T5 산출물에 의존.
+- T8은 T1(일촌)에 의존 — `isIlchon`/`ilchonsOf`를 간선원으로 재사용.
 
 ## Regression Scope
 - direct: 각 도메인 서비스 흐름.
-- shared: 공개범위 판정(일촌 상태 변경 시 재판정), 도토리 차감(미니룸 구매가 재사용).
+- shared: 공개범위 판정(일촌 상태 변경 시 재판정), 도토리 차감(미니룸 구매가 재사용),
+  파도타기 간선(일촌 수락/해제가 hop 경로를 바꿔야 함).
 - 근거: `sdd/02_plan/10_test/regression_verification.md` (구현 시 생성).
 
 ## Validation
-- 도메인 27 + 화면 parity 3 = **30/30 PASS** (`tmp/proof-results.json` status=PASS).
+- 도메인 33 + 화면 parity 3 = **36/36 PASS** (`tmp/proof-results.json` status=PASS).
 - 표준 경로 `./gradlew test`(proof)·`./gradlew uiParity`(회귀)는 현 환경 JDK 26 비호환
   → JUnit Launcher 폴백으로 동등 검증. (재현 명령: `sdd/04_verify/02_screen/minihompy.md`)
 

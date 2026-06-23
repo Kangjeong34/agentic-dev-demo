@@ -11,6 +11,7 @@
 | --- | --- | --- |
 | 도토리(결제) | `dotori/DotoriService`, `DotoriResult`, `DotoriStatus` | dotori AC-1~5 |
 | 일촌(관계) | `ilchon/IlchonService`, `IlchonProfile`, `IlchonStatus` | ilchon AC-1~6 |
+| 일촌 파도타기 | `ilchon/WaveService`, `WaveRide` | wave AC-1~6 |
 | 다이어리 | `diary/DiaryService`, `Diary`, `Visibility` | diary AC-1~5 |
 | 방명록 | `guestbook/GuestbookService`, `GuestbookEntry`, `GuestbookView` | guestbook AC-1~5 |
 | 미니룸/BGM | `miniroom/MiniroomService`, `Item`, `ItemType`, `MiniroomLayout`, `BuyResult` | miniroom AC-1~5 |
@@ -25,6 +26,9 @@
   일촌에게만 노출(diary AC-2·AC-3) — 일촌 상태 변화가 공개범위에 즉시 반영.
 - **비밀글 분기(방명록)**: 목록 조회 시 비밀글은 주인·작성자에게만 content 노출, 그 외 null 마스킹.
 - **일촌 양방향 표현**: accepted 관계는 정규화한 무순서 키 1건으로 저장 → 양쪽에서 `isIlchon` 일치.
+- **파도타기 그래프 순회(일촌 재사용)**: `WaveRide`가 `IlchonService.ilchonsOf()`(오름차순)를 간선원으로
+  삼아 미방문 일촌으로 hop. 방문 이력으로 재방문을 막고, 시드 기반 `Random`으로 경로를 재현 가능하게 한다
+  → accepted 간선만 사용하므로 일촌 수락/해제가 hop 경로에 즉시 반영(wave AC-2·AC-4·AC-5·AC-6).
 
 ## 빌드/실행 방법
 
@@ -33,8 +37,17 @@
   → `tools/TestRunner.java`(JUnit Platform Launcher)로 직접 컴파일·실행해 동일 proof 산출물 생성.
   자세한 명령·결과는 `04_verify/01_feature/cyworld.md` 참조.
 
+## 자동화 게이트 (toolchain)
+
+완료 기준은 "사람이 봤다"가 아니라 "게이트가 통과시켰다"입니다. `99_toolchain` 참조.
+
+| 게이트 | 명령 | 산출물 |
+| --- | --- | --- |
+| proof 테스트 | `./gradlew test` / `TestRunner` | `tmp/proof-results.json` (36/36 PASS) |
+| 도메인 경계 | `run_arch_check.py` | 도메인→화면 위반 0 · 순환 없음 |
+| proof 증빙 생성기 | `gen_proof_evidence.py` | `04_verify/10_test/proof_evidence.md` |
+
 ## 미구현(현재 범위 밖)
 
 - 웹/HTTP 계층, 영속 DB(인메모리만).
-- 미니홈피 메인 화면(`02_screen` 명세는 존재) 실제 렌더·UI parity 스냅샷.
 - 사진첩, 미니미 커스터마이징, 알림 발송, 환불.

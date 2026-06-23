@@ -5,12 +5,12 @@
 ## 검증 게이트 결과
 
 - 게이트: JUnit 5.12.2 (JUnit Platform Launcher).
-- 도메인 5종: **27/27 PASS**. (화면 parity 3종 포함 시 전체 30/30 → `04_verify/02_screen/minihompy.md`)
+- 도메인 6종: **33/33 PASS**. (화면 parity 3종 포함 시 전체 36/36 → `04_verify/02_screen/minihompy.md`)
 - `tmp/proof-results.json` `status: PASS`.
 
 ```
-[ 27 tests found ] [ 27 tests successful ] [ 0 tests failed ]
-PROOF: total=27 passed=27 failed=0 status=PASS
+[ 36 tests found ] [ 36 tests successful ] [ 0 tests failed ]
+PROOF: total=36 passed=36 failed=0 status=PASS
 ```
 
 ## AC ↔ 테스트 매핑 (전부 PASS)
@@ -19,6 +19,7 @@ PROOF: total=27 passed=27 failed=0 status=PASS
 | --- | --- | --- | --- |
 | 도토리 | `DotoriServiceTest` | 5 | AC-1 충전 / AC-2 차감 / AC-3 잔액부족 거부 / AC-4 멱등 / AC-5 음수불가 |
 | 일촌 | `IlchonServiceTest` | 6 | AC-1 pending / AC-2 양방향 / AC-3 거절 / AC-4 멱등 / AC-5 해제 / AC-6 일촌명·평 |
+| 파도타기 | `WaveServiceTest` | 6 | AC-1 시작기록 / AC-2 미방문일촌이동 / AC-3 막다른길 / AC-4 무재방문 / AC-5 시드결정성 / AC-6 accepted간선만 |
 | 다이어리 | `DiaryServiceTest` | 5 | AC-1 작성 / AC-2 공개범위 목록 / AC-3 일촌전용 차단 / AC-4 주인수정 / AC-5 타인거부 |
 | 방명록 | `GuestbookServiceTest` | 5 | AC-1 작성 / AC-2 비밀글 분기 / AC-3 주인삭제 / AC-4 작성자삭제 / AC-5 제3자거부 |
 | 미니룸 | `MiniroomServiceTest` | 6 | AC-1 구매·차감 / AC-2 잔액부족 미지급 / AC-3 배치 / AC-4 미보유배치거부 / AC-5 대표BGM / (회귀)더블클릭 멱등 |
@@ -44,6 +45,7 @@ JDK 17~21 환경에서는 `./gradlew test` 가 동일한 검증을 수행한다(
 - shared(교차 검증됨):
   - 공개범위 ↔ 일촌: `DiaryServiceTest::list_respects_visibility`가 일촌 수락 전/후 노출 건수 변화를 단언.
   - 미니룸 구매 ↔ 도토리 차감: `MiniroomServiceTest::buy_*` 및 `duplicate_buy_click_idempotent`가 도토리 멱등성 재사용을 단언.
+  - 파도타기 간선 ↔ 일촌 상태: `WaveServiceTest::hop_only_through_accepted_ilchon`가 pending은 간선 제외·해제 시 hop 소멸을 단언.
 - 근거 문서: `sdd/02_plan/10_test/regression_verification.md`.
 
 ## Residual Risk

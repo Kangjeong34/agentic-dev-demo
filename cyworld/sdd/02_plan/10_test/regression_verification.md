@@ -12,6 +12,7 @@
 | --- | --- | --- |
 | 다이어리 공개범위 ← 일촌 상태 | 일촌 수락/해제가 ILCHON 글 노출을 바꿔야 함 | `DiaryServiceTest::list_respects_visibility`, `ilchon_only_blocks_stranger` |
 | 미니룸 구매 ← 도토리 차감/멱등 | 구매가 도토리 잔액·멱등성을 정확히 재사용해야 함 | `MiniroomServiceTest::buy_charges_dotori_and_grants`, `buy_rejected_when_insufficient`, `duplicate_buy_click_idempotent` |
+| 파도타기 간선 ← 일촌 상태 | 일촌 수락/해제가 hop 경로(이동 가능 대상)를 바꿔야 함 | `WaveServiceTest::hop_only_through_accepted_ilchon`, `hop_moves_to_unvisited_ilchon` |
 
 ## 제외 (justified exclusions)
 
@@ -21,4 +22,4 @@
 
 ## 결과
 
-전 범위 27/27 PASS (`sdd/04_verify/01_feature/cyworld.md`).
+전 범위 도메인 33/33 PASS (화면 parity 3 포함 시 36/36) (`sdd/04_verify/01_feature/cyworld.md`).

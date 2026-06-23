@@ -4,7 +4,7 @@
 
 ## 검증 게이트 결과
 
-전체 **30/30 PASS** (도메인 27 + 화면 3) → `tmp/proof-results.json` status=PASS.
+전체 **36/36 PASS** (도메인 33 + 화면 3) → `tmp/proof-results.json` status=PASS.
 
 | 테스트 | 검증 | 매핑 |
 | --- | --- | --- |
