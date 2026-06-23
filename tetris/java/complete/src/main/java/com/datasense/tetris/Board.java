@@ -16,8 +16,54 @@ public class Board {
         this.rows = new ArrayList<>(rows);
     }
 
+    /** 모든 칸이 빈 width×height 보드를 만듭니다(AC-1). */
+    public static Board empty(int width, int height) {
+        List<boolean[]> rows = new ArrayList<>();
+        for (int i = 0; i < height; i++) {
+            rows.add(new boolean[width]);
+        }
+        return new Board(width, rows);
+    }
+
     public List<boolean[]> rows() {
         return rows;
+    }
+
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return rows.size();
+    }
+
+    /** 해당 칸이 채워져 있으면 true. */
+    public boolean cell(int row, int col) {
+        return rows.get(row)[col];
+    }
+
+    /**
+     * AC-1·AC-5·AC-6: 조각이 벽·바닥을 벗어나거나 이미 쌓인 블록과 겹치면 true 입니다.
+     */
+    public boolean collides(Piece piece) {
+        for (int[] cell : piece.cells()) {
+            int r = cell[0];
+            int c = cell[1];
+            if (r < 0 || r >= rows.size() || c < 0 || c >= width) {
+                return true;
+            }
+            if (rows.get(r)[c]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** AC-1: 조각의 칸을 보드에 고정(채움)합니다. */
+    public void lock(Piece piece) {
+        for (int[] cell : piece.cells()) {
+            rows.get(cell[0])[cell[1]] = true;
+        }
     }
 
     /**

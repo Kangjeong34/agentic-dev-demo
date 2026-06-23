@@ -7,6 +7,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 명세(sdd/01_planning/tetris_spec.md)의 수용기준을 통과하는 테스트입니다. */
 class BoardTest {
@@ -54,5 +56,19 @@ class BoardTest {
 
         assertEquals(0, board.clearFullLines());
         assertEquals(2, board.rows().size());
+    }
+
+    @Test // AC-1: 조각을 고정하면 그 칸이 보드에 채워진다
+    void locksPieceCells() {
+        Board board = Board.empty(4, 4);
+        Piece piece = new Piece(Tetromino.O, 0, 0, 0); // 칸: (0,1)(0,2)(1,1)(1,2)
+
+        board.lock(piece);
+
+        assertTrue(board.cell(0, 1));
+        assertTrue(board.cell(0, 2));
+        assertTrue(board.cell(1, 1));
+        assertTrue(board.cell(1, 2));
+        assertFalse(board.cell(0, 0)); // 조각이 닿지 않은 칸은 그대로 비어 있다
     }
 }

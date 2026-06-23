@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>테트리스 (datasense)</title>
+<style>
+  :root { --cell: 30px; --grid: #1b2030; --bg: #0e1116; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: #e6e9ef;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 28px; padding: 24px;
+  }
+  .stage { display: flex; gap: 24px; align-items: flex-start; }
+  canvas#board { background: var(--grid); border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .panel { width: 180px; display: flex; flex-direction: column; gap: 18px; }
+  h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: 2px; }
+  .sub { font-size: 12px; color: #8b93a7; margin-top: -8px; }
+  .stat { background: #161b27; border: 1px solid #232a3a; border-radius: 8px; padding: 12px 14px; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8b93a7; }
+  .stat .value { font-size: 28px; font-weight: 700; margin-top: 2px; }
+  .next { background: #161b27; border: 1px solid #232a3a; border-radius: 8px; padding: 12px 14px; }
+  .next .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8b93a7; margin-bottom: 8px; }
+  canvas#next { display: block; }
+  .keys { font-size: 12px; color: #9aa3b8; line-height: 1.9; }
+  .keys b { color: #e6e9ef; font-weight: 600; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(8,10,14,.78); display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 10px;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { margin: 0; font-size: 34px; letter-spacing: 3px; }
+  .overlay p { margin: 0; color: #9aa3b8; }
+  .tag { color: #5ad1c4; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <canvas id="board" width="300" height="600"></canvas>
+    <div class="panel">
+      <div>
+        <h1>TETRIS</h1>
+        <div class="sub">datasense · GameEngine 규칙 포팅</div>
+      </div>
+      <div class="next">
+        <div class="label">다음 조각</div>
+        <canvas id="next" width="120" height="120"></canvas>
+      </div>
+      <div class="stat"><div class="label">점수</div><div class="value" id="score">0</div></div>
+      <div class="stat"><div class="label">레벨</div><div class="value" id="level">1</div></div>
+      <div class="stat"><div class="label">지운 줄</div><div class="value" id="lines">0</div></div>
+      <div class="keys">
+        <b>← →</b> 이동<br>
+        <b>↑</b> 회전 · <b>↓</b> 소프트드롭<br>
+        <b>Space</b> 하드드롭<br>
+        <b>P</b> 일시정지 · <b>R</b> 재시작
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitle">GAME OVER</h2>
+    <p id="overlaySub">R 을 눌러 다시 시작</p>
+  </div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ *  GameEngine.java / Tetromino.java / Board.java 규칙을 그대로 포팅.
+ *  좌표는 [row, col], row 는 아래로 증가. 한 조각은 항상 4칸.
+ * ------------------------------------------------------------------ */
+const WIDTH = 10, HEIGHT = 20, CELL = 30;
+
+// 7종 × 4개 회전 상태 (Tetromino.java 와 동일)
+const TETROMINOES = {
+  I: { color: "#4cc9f0", states: [
+    [[1,0],[1,1],[1,2],[1,3]], [[0,2],[1,2],[2,2],[3,2]],
+    [[2,0],[2,1],[2,2],[2,3]], [[0,1],[1,1],[2,1],[3,1]] ] },
+  O: { color: "#f6c453", states: [
+    [[0,1],[0,2],[1,1],[1,2]], [[0,1],[0,2],[1,1],[1,2]],
+    [[0,1],[0,2],[1,1],[1,2]], [[0,1],[0,2],[1,1],[1,2]] ] },
+  T: { color: "#b15dff", states: [
+    [[0,1],[1,0],[1,1],[1,2]], [[0,1],[1,1],[1,2],[2,1]],
+    [[1,0],[1,1],[1,2],[2,1]], [[0,1],[1,0],[1,1],[2,1]] ] },
+  S: { color: "#5ad17a", states: [
+    [[0,1],[0,2],[1,0],[1,1]], [[0,1],[1,1],[1,2],[2,2]],
+    [[1,1],[1,2],[2,0],[2,1]], [[0,0],[1,0],[1,1],[2,1]] ] },
+  Z: { color: "#ff6b6b", states: [
+    [[0,0],[0,1],[1,1],[1,2]], [[0,2],[1,1],[1,2],[2,1]],
+    [[1,0],[1,1],[2,1],[2,2]], [[0,1],[1,0],[1,1],[2,0]] ] },
+  J: { color: "#4d7cff", states: [
+    [[0,0],[1,0],[1,1],[1,2]], [[0,1],[0,2],[1,1],[2,1]],
+    [[1,0],[1,1],[1,2],[2,2]], [[0,1],[1,1],[2,0],[2,1]] ] },
+  L: { color: "#ff9f45", states: [
+    [[0,2],[1,0],[1,1],[1,2]], [[0,1],[1,1],[2,1],[2,2]],
+    [[1,0],[1,1],[1,2],[2,0]], [[0,0],[0,1],[1,1],[2,1]] ] },
+};
+const TYPES = Object.keys(TETROMINOES);
+const LINE_SCORE = [0, 100, 300, 500, 800];
+
+// --- Piece (불변 표현) ---------------------------------------------
+function cells(piece) {
+  const base = TETROMINOES[piece.type].states[((piece.rotation % 4) + 4) % 4];
+  return base.map(([r, c]) => [piece.row + r, piece.col + c]);
+}
+const moved   = (p, dr, dc) => ({ type: p.type, rotation: p.rotation, row: p.row + dr, col: p.col + dc });
+const rotated = (p)         => ({ type: p.type, rotation: p.rotation + 1, row: p.row, col: p.col });
+
+// --- 7-bag 생성기 ---------------------------------------------------
+let bag = [];
+function nextType() {
+  if (bag.length === 0) {
+    bag = [...TYPES];
+    for (let i = bag.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; }
+  }
+  return bag.shift();
+}
+
+// --- Board ----------------------------------------------------------
+let board, current, nextPiece, score, level, lines, gameOver, paused;
+
+function emptyBoard() { return Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(null)); }
+
+function collides(piece) {
+  return cells(piece).some(([r, c]) =>
+    r < 0 || r >= HEIGHT || c < 0 || c >= WIDTH || board[r][c] !== null);
+}
+function lock(piece) {
+  const color = TETROMINOES[piece.type].color;
+  for (const [r, c] of cells(piece)) board[r][c] = color;
+}
+function clearFullLines() {
+  const kept = board.filter(row => row.some(cell => cell === null));
+  const cleared = HEIGHT - kept.length;
+  while (kept.length < HEIGHT) kept.unshift(Array(WIDTH).fill(null));
+  board = kept;
+  return cleared;
+}
+
+// --- GameEngine -----------------------------------------------------
+function spawn() {
+  const type = nextPiece;
+  nextPiece = nextType();
+  const piece = { type, rotation: 0, row: 0, col: (WIDTH - 4) >> 1 };
+  if (collides(piece)) gameOver = true;
+  current = piece;
+}
+function lockAndSpawn() {
+  lock(current);
+  const cleared = clearFullLines();
+  if (cleared > 0) {
+    score += LINE_SCORE[cleared] * level;   // 지우던 시점의 레벨로 가산
+    lines += cleared;
+    level = 1 + Math.floor(lines / 10);     // 10줄마다 레벨업
+  }
+  spawn();
+}
+function tick() {
+  if (gameOver || paused) return;
+  const down = moved(current, 1, 0);
+  if (collides(down)) lockAndSpawn(); else current = down;
+}
+function hardDrop() {
+  if (gameOver || paused) return;
+  while (!collides(moved(current, 1, 0))) current = moved(current, 1, 0);
+  lockAndSpawn();
+}
+function tryMove(dr, dc) { if (gameOver || paused) return; const m = moved(current, dr, dc); if (!collides(m)) current = m; }
+function rotate()       { if (gameOver || paused) return; const r = rotated(current); if (!collides(r)) current = r; }
+
+function reset() {
+  bag = []; board = emptyBoard();
+  score = 0; level = 1; lines = 0; gameOver = false; paused = false;
+  nextPiece = nextType(); spawn();
+}
+
+// --- 렌더링 ---------------------------------------------------------
+const ctx = document.getElementById("board").getContext("2d");
+const nctx = document.getElementById("next").getContext("2d");
+
+function drawCell(g, x, y, color, size = CELL) {
+  g.fillStyle = color; g.fillRect(x + 1, y + 1, size - 2, size - 2);
+  g.fillStyle = "rgba(255,255,255,.18)"; g.fillRect(x + 1, y + 1, size - 2, 4);
+}
+function render() {
+  ctx.clearRect(0, 0, WIDTH * CELL, HEIGHT * CELL);
+  // 격자
+  ctx.strokeStyle = "rgba(255,255,255,.04)";
+  for (let r = 0; r <= HEIGHT; r++) { ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(WIDTH * CELL, r * CELL); ctx.stroke(); }
+  for (let c = 0; c <= WIDTH; c++) { ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, HEIGHT * CELL); ctx.stroke(); }
+  // 쌓인 블록
+  for (let r = 0; r < HEIGHT; r++) for (let c = 0; c < WIDTH; c++)
+    if (board[r][c]) drawCell(ctx, c * CELL, r * CELL, board[r][c]);
+  // 고스트(착지 위치)
+  if (!gameOver) {
+    let ghost = current;
+    while (!collides(moved(ghost, 1, 0))) ghost = moved(ghost, 1, 0);
+    ctx.globalAlpha = 0.25;
+    for (const [r, c] of cells(ghost)) if (r >= 0) drawCell(ctx, c * CELL, r * CELL, TETROMINOES[current.type].color);
+    ctx.globalAlpha = 1;
+    // 현재 조각
+    for (const [r, c] of cells(current)) if (r >= 0) drawCell(ctx, c * CELL, r * CELL, TETROMINOES[current.type].color);
+  }
+  // 다음 조각
+  nctx.clearRect(0, 0, 120, 120);
+  const base = TETROMINOES[nextPiece].states[0];
+  const rs = base.map(p => p[0]), csv = base.map(p => p[1]);
+  const offR = (Math.min(...rs) + Math.max(...rs)) / 2, offC = (Math.min(...csv) + Math.max(...csv)) / 2;
+  for (const [r, c] of base)
+    drawCell(nctx, (c - offC) * 24 + 48, (r - offR) * 24 + 48, TETROMINOES[nextPiece].color, 24);
+
+  document.getElementById("score").textContent = score;
+  document.getElementById("level").textContent = level;
+  document.getElementById("lines").textContent = lines;
+  const overlay = document.getElementById("overlay");
+  if (gameOver) { overlay.classList.add("show"); document.getElementById("overlayTitle").textContent = "GAME OVER"; document.getElementById("overlaySub").textContent = "R 을 눌러 다시 시작"; }
+  else if (paused) { overlay.classList.add("show"); document.getElementById("overlayTitle").textContent = "PAUSED"; document.getElementById("overlaySub").textContent = "P 를 눌러 계속"; }
+  else overlay.classList.remove("show");
+}
+
+// --- 루프 (레벨이 오를수록 빨라짐) ----------------------------------
+let acc = 0, last = performance.now();
+function dropInterval() { return Math.max(80, 800 - (level - 1) * 70); }
+function loop(now) {
+  const dt = now - last; last = now;
+  if (!gameOver && !paused) { acc += dt; if (acc >= dropInterval()) { acc = 0; tick(); } }
+  render();
+  requestAnimationFrame(loop);
+}
+
+// --- 입력 -----------------------------------------------------------
+document.addEventListener("keydown", (e) => {
+  switch (e.key) {
+    case "ArrowLeft":  tryMove(0, -1); break;
+    case "ArrowRight": tryMove(0, 1); break;
+    case "ArrowDown":  tick(); acc = 0; break;
+    case "ArrowUp":    rotate(); break;
+    case " ":          hardDrop(); acc = 0; break;
+    case "p": case "P": if (!gameOver) paused = !paused; break;
+    case "r": case "R": reset(); break;
+    default: return;
+  }
+  e.preventDefault();
+});
+
+reset();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
