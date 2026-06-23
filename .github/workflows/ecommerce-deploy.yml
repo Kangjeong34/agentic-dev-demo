@@ -1,0 +1,63 @@
+name: ecommerce(python shop) — dev/prod 배포
+
+on:
+  push:
+    branches: [main]                # main 푸시 → 개발계 게이트
+    tags: ["[0-9]*.[0-9]*.[0-9]*"]  # 0.0.1 형식 태그 → 운영계 게이트
+  pull_request:
+    branches: [main]
+
+defaults:
+  run:
+    working-directory: ecommerce/python/complete
+
+jobs:
+  # ── 개발계: main 푸시 / PR 시 빌드·테스트 게이트
+  deploy-dev:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build check (compile)
+        run: python -m compileall -q shop tests
+
+      - name: Run tests (gate)
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pytest -q
+
+      - name: Deploy to DEV
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # NOTE: 이 프로젝트는 순수 도메인 포팅이라 배포 가능한 서버/도커 산출물이 없습니다.
+          # 실제 배포 대상이 생기면 이 단계를 교체하세요.
+          echo "DEV 게이트 통과 — ecommerce/python/complete"
+
+  # ── 운영계: v0.0.1 형식 태그 푸시 시 게이트
+  deploy-prod:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build check (compile)
+        run: python -m compileall -q shop tests
+
+      - name: Run tests (gate)
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pytest -q
+
+      - name: Deploy to PROD
+        run: |
+          # NOTE: 실제 배포 대상이 생기면 이 단계를 교체하세요.
+          echo "PROD 게이트 통과 — ${{ github.ref_name }} (ecommerce/python/complete)"
