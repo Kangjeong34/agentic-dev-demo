@@ -1,0 +1,4 @@
+rootProject.name = 'demo-target-cyworld'
+
+// 싸이월드 미니홈피 데모 단일 모듈입니다. auth 데모와 동일한 SDD 기법(EARS AC + proof 게이트)을
+// 따르며, bounded context(일촌·다이어리·방명록·도토리·미니룸)를 패키지로 분리합니다.

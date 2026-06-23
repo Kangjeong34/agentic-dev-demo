@@ -1,0 +1,19 @@
+# Gradle / 빌드 산출물
+.gradle/
+build/
+bin/
+
+# JDK26 폴백 수동 빌드 산출물 (Gradle 데몬 비호환 우회)
+build-manual/
+build-manual-cp.txt
+
+# proof 임시 산출(매 테스트 실행마다 재생성)
+tmp/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
