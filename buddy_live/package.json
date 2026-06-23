@@ -1,0 +1,14 @@
+{
+  "name": "buddy-live",
+  "version": "1.0.0",
+  "description": "버디버디(BuddyLive) 메신저 데모 — SDD(verify 중점). 순수 이벤트 리듀서 + 라이브 2-탭 동기화.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "proof": "node tools/run_proof.js",
+    "arch": "node sdd/99_toolchain/01_automation/run_arch_check.js",
+    "evidence": "node sdd/99_toolchain/01_automation/gen_proof_evidence.js",
+    "serve": "node tools/serve.js"
+  }
+}
