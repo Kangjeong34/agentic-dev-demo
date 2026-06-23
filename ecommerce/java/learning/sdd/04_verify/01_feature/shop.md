@@ -16,6 +16,8 @@
   - `InventoryServiceTest` 5개: 예약 가용분 차감, 확정 물리차감, 해제 복원, oversell 거부, 동시 100건 예약에서 정확히 50건만 성공·가용분 0 (AC-I1~I5).
   - `OrderTest` 5개: 총액 0원 거부, 정방향 전환, 이행 가드, 이행 후 취소 거부, 결제 후 취소 환불신호 (AC-O3·O4·O5·O6 + 취소신호).
 - 회귀 범위: 이번 변경은 신규 도메인 코드 추가입니다. 기존에는 main 소스가 비어 있었으므로 깨질 상위/하위/공유 표면이 없습니다. 공유 커널(Money·ErrorCode·Page)은 새로 도입되었고 위 세 테스트가 그 사용처를 모두 커버합니다.
+- 부분 구현 컴파일: 타깃 테스트는 E2E 를 실행에서 제외하지만 `compileTestJava` 는 전체 테스트 소스를 컴파일합니다. `ShopE2ETest` 가 production 클래스를 직접 import 하지 않고 `WebApplicationContext` + URL 문자열로만 호출하므로, web 계층이 없는 STEP 2 에서도 테스트 컴파일이 성공합니다.
+- 재현 환경(Windows): 기본 JDK 가 26(class file major 70)이면 Gradle 8.5 데몬 기동이 `Unsupported class file major version 70` 으로 실패합니다. Gradle 이 받아 둔 JDK 17 을 가리켜 실행했습니다 — `JAVA_HOME="C:/Users/Metanet/.gradle/jdks/eclipse_adoptium-17-amd64-windows.2"` (Temurin 17.0.19). 경계 게이트는 `python`(Store 스텁, 실패) 대신 `py` 런처로 실행했습니다.
 
 구조 게이트(DDD 경계):
 
@@ -32,17 +34,20 @@
 - STEP 6 에서 web + checkout 청크를 구현한 후 재실행: **BUILD SUCCESSFUL, 23/23 green** (failures 0, errors 0).
   - `ProductTest` 4개, `InventoryServiceTest` 5개, `OrderTest` 5개, `ShopE2ETest` 9개 전부 통과.
 - todos 의 "23개 전부 green" 게이트 통과.
+- 재검증(이번 학습 세션): `./gradlew clean test` 를 STEP 2 와 동일한 JDK 17(`JAVA_HOME=...eclipse_adoptium-17-amd64-windows.2`)로 재실행해 **BUILD SUCCESSFUL, 23/23 green** 을 다시 확인했습니다(`build/test-results/test/*.xml` 합계 tests=23, failures 0, errors 0). 경계 게이트도 `py ...run_arch_check.py` → RESULT arch_check PASS. 전체 컨텍스트가 들어오면서 의존 엣지가 `inventory→catalog`, `cart→catalog`, `payment→ordering·inventory`, `checkout→cart·catalog·inventory·ordering·payment` 로 확장됐고 순환은 없습니다.
 
-스모크 시나리오(bootRun · STEP 6):
+스모크 시나리오(bootRun · 이번 학습 세션 재실행):
 
-- 실행: `./gradlew bootRun` 으로 서버 기동(8080 포트, 1.25초 기동).
-- 시나리오: 상품 등록 → 장바구니 생성·담기 → 체크아웃 → 결제 → 이행.
-  1. `POST /api/products` → `prod_9b88bc35` ACTIVE, 재고 10.
-  2. `POST /api/carts` + `POST /api/carts/.../items` → 노트북 2개 담김, 소계 2,000,000원.
-  3. `POST /api/checkout` → `ord_1cf89864` CREATED, 총액 2,000,000원. 가용 재고 8로 감소(예약).
-  4. `POST /api/payments` → `pay_8591e2b5` CAPTURED. 주문 PAID, 물리 재고 8로 확정 차감.
-  5. `POST /api/orders/.../fulfill` → 주문 FULFILLED.
-- 판정: 전체 여정 정상 동작 확인.
+- 실행: `JAVA_HOME=...eclipse_adoptium-17-amd64-windows.2 ./gradlew bootRun` 으로 서버 기동(8080 포트, Java 17.0.19, PID 5484, **1.478초** 기동).
+- 범위: 상품 등록 → 장바구니 생성·담기 → 체크아웃까지(예약 반영 확인). 결제·이행은 이번 세션에서 실행하지 않았고 E2E-1(`fullJourney`)이 전 구간을 덮습니다.
+  1. `POST /api/products` (Laptop, 1,000,000원, 재고 10) → `prod_0e1e2062` ACTIVE, stockQuantity 10.
+  2. `GET /api/inventory/prod_0e1e2062` → available **10**.
+  3. `POST /api/carts` → `cart_7986f66a`.
+  4. `POST /api/carts/cart_7986f66a/items` (Laptop ×2) → 소계·총액 **2,000,000원**.
+  5. `POST /api/checkout` → `ord_a4bc00a0` **CREATED**, totalAmount 2,000,000원.
+  6. `GET /api/inventory/prod_0e1e2062` → available **8** (물리 재고 10 유지, 예약 2만큼 가용분 감소).
+- 판정: 상품 → 장바구니 → 체크아웃 → 예약 경로 정상 동작 확인. 종료는 서버 프로세스(PID 5484) 종료 + `./gradlew --stop`.
+- 참고: git-bash→curl(Windows) 파이프라인에서 한글 JSON 본문이 깨져 상품 등록이 400(JSON 파싱)으로 실패하므로 본문은 ASCII(`Laptop`)로 보냈습니다. 서버는 UTF-8 정상이며 한글 상품명 경로는 E2E 가 커버합니다.
 
 잔여 리스크:
 
